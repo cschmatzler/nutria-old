@@ -72,18 +72,18 @@ spec:
             - name: scripts
               mountPath: /pre-stop.sh
               subPath: pre-stop.sh
-          livenessProbe:
-            exec:
-              command:
-              - bash
-              - -ec
-              - pg_isready -h localhost -U postgres
-          readinessProbe:
-            exec:
-              command:
-              - bash
-              - -ec
-              - pg_isready -h localhost -U postgres
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #     - bash
+          #     - -ec
+          #     - pg_isready -h localhost -U postgres
+          # readinessProbe:
+          #   exec:
+          #     command:
+          #     - bash
+          #     - -ec
+          #     - pg_isready -h localhost -U postgres
           resources:
             requests: 
               cpu: 64m
