@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mastodon
+  namespace: medium-place
+  labels:
+    app.kubernetes.io/name: mastodon
+    app.kubernetes.io/part-of: mastodon
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: 3.5.2
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mastodon
+      app.kubernetes.io/part-of: mastodon
+  template:
+    metadata:
+      annotations:
+        vault.security.banzaicloud.io/vault-addr: http://vault.infrastructure.svc.cluster.local:8200
+        vault.security.banzaicloud.io/vault-role: mastodon
+        diun.enable: "true"
+        diun.regopt: docker.io
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+$"
+      labels:
+        app.kubernetes.io/name: mastodon
+        app.kubernetes.io/part-of: mastodon
+        app.kubernetes.io/component: server
+        app.kubernetes.io/version: 3.5.2
+    spec:
+      serviceAccountName: mastodon
+      securityContext:
+        fsGroup: 1001
+      initContainers:
+        - name: migrations
+          image: tootsuite/mastodon:v3.5.2
+          command:
+            - bundle
+            - exec
+            - rails db:migrate
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: mastodon-env
+      containers:
+        - name: web
+          image: tootsuite/mastodon:v3.5.2
+          command:
+            - bundle
+            - exec
+            - rails s -p 3000
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: mastodon-env
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 3000
+          volumeMounts:
+            - name: web-tmp
+              mountPath: /opt/mastodon/tmp
+          resources:
+            requests:
+              cpu: 32m
+              memory: 512Mi
+            limits:
+              cpu: 512m
+              memory: 768Mi
+        - name: streaming
+          image: tootsuite/mastodon:v3.5.2
+          command:
+            - node
+            - ./streaming
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: mastodon-env
+          ports:
+            - name: http-ws
+              protocol: TCP
+              containerPort: 4000
+          resources:
+            requests:
+              cpu: 8m
+              memory: 128Mi
+            limits:
+              cpu: 192m
+              memory: 192Mi
+        - name: sidekiq
+          image: tootsuite/mastodon:v3.5.2
+          command:
+            - bundle
+            - exec
+            - sidekiq
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: mastodon-env
+          resources:
+            requests:
+              cpu: 16m
+              memory: 384Mi
+            limits:
+              cpu: 512m
+              memory: 512Mi
+      volumes:
+        - name: web-tmp
+          emptyDir: {}

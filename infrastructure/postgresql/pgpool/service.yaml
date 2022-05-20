@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-pgpool
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: pgpool
+    app.kubernetes.io/part-of: postgresql
+    app.kubernetes.io/component: pooler
+    app.kubernetes.io/version: 4.3.1
+  annotations:
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  selector:
+    app.kubernetes.io/name: pgpool
+    app.kubernetes.io/part-of: postgresql
+  ports:
+    - name: postgresql
+      protocol: TCP
+      port: 5432
+      targetPort: postgresql
+      nodePort: null

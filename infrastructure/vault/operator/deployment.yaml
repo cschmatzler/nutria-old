@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-operator
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: vault-operator
+    app.kubernetes.io/part-of: vault
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/version: 1.15.2
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vault-operator
+      app.kubernetes.io/part-of: vault
+  template:
+    metadata:
+      annotations:
+        diun.enable: "true"
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+$"
+      labels:
+        app.kubernetes.io/name: vault-operator
+        app.kubernetes.io/part-of: vault
+        app.kubernetes.io/component: operator
+        app.kubernetes.io/version: 1.15.2
+    spec:
+      serviceAccountName: vault-operator
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: operator
+          image: ghcr.io/banzaicloud/vault-operator:1.15.2
+          command:
+            - vault-operator
+            - -sync_period
+            - 1m
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          envFrom:
+            - configMapRef:
+                name: vault-operator-env
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 8080
+            - name: http-metrics
+              protocol: TCP
+              containerPort: 8383
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /ready
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1

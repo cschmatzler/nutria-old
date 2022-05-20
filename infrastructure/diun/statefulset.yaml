@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: diun
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: diun
+    app.kubernetes.io/part-of: diun
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: 4.21.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: diun
+      app.kubernetes.io/part-of: diun
+  template:
+    metadata:
+      annotations:
+        vault.security.banzaicloud.io/vault-addr: http://vault.infrastructure.svc.cluster.local:8200
+        vault.security.banzaicloud.io/vault-role: diun
+        diun.enable: "true"
+        diun.regopt: docker.io
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+$"
+      labels:
+        app.kubernetes.io/name: diun
+        app.kubernetes.io/part-of: diun
+        app.kubernetes.io/component: server
+        app.kubernetes.io/version: 4.21.0
+    spec:
+      serviceAccountName: diun
+      securityContext:
+        fsGroup: 1001
+      containers:
+        - name: diun
+          image: crazymax/diun:4.21.0
+          args:
+            - serve
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: diun-env
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /tmp/images.yaml
+              subPath: images.yaml
+          resources:
+            requests:
+              cpu: 32m
+              memory: 64Mi
+            limits:
+              cpu: 64m
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: diun-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        namespace: infrastructure
+        labels:
+          app.kubernetes.io/name: diun
+          app.kubernetes.io/part-of: diun
+          app.kubernetes.io/component: server
+      spec:
+        storageClassName: scw-bssd-retain
+        accessModes:
+          - ReadWriteOnce
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: 1Gi
+        

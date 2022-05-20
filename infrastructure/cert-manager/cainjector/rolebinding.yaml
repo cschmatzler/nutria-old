@@ -1,0 +1,18 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cert-manager-cainjector-leader-election
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: cainjector
+    app.kubernetes.io/part-of: cert-manager
+    app.kubernetes.io/component: injector
+    app.kubernetes.io/version: 1.8.0
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cert-manager-cainjector-leader-election
+subjects:
+  - kind: ServiceAccount
+    name: cert-manager-cainjector
+    namespace: infrastructure

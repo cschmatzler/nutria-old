@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/part-of: postgresql
+    app.kubernetes.io/component: database
+    app.kubernetes.io/version: 14.3.0
+spec:
+  replicas: 3
+  podManagementPolicy: Parallel
+  serviceName: postgresql-headless
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/part-of: postgresql
+  template:
+    metadata:
+      annotations:
+        vault.security.banzaicloud.io/vault-addr: http://vault.infrastructure.svc.cluster.local:8200
+        vault.security.banzaicloud.io/vault-role: postgresql
+        diun.enable: "true"
+        diun.regopt: docker.io
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+-debian-\\d+-r\\d+$"
+      labels:
+        app.kubernetes.io/name: postgresql
+        app.kubernetes.io/part-of: postgresql
+        app.kubernetes.io/component: database
+        app.kubernetes.io/version: 14.3.0
+    spec:
+      serviceAccountName: postgresql
+      securityContext:
+        fsGroup: 1001
+      containers:
+        - name: postgresql
+          image: bitnami/postgresql-repmgr:14.3.0-debian-10-r0
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            readOnlyRootFilesystem: false
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /pre-stop.sh
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: REPMGR_NODE_NAME
+              value: $(POD_NAME)
+            - name: REPMGR_NODE_NETWORK_NAME
+              value: $(POD_NAME).postgresql-headless.infrastructure.svc.cluster.local
+          envFrom:
+            - configMapRef:
+                name: postgresql-env
+          ports:
+            - name: postgresql
+              protocol: TCP
+              containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/postgresql
+            - name: scripts
+              mountPath: /pre-stop.sh
+              subPath: pre-stop.sh
+          livenessProbe:
+            exec:
+              command:
+              - bash
+              - -ec
+              - pg_isready -h localhost -U postgres
+          readinessProbe:
+            exec:
+              command:
+              - bash
+              - -ec
+              - pg_isready -h localhost -U postgres
+          resources:
+            limits: {}
+            requests: {}
+      volumes:
+        - name: scripts
+          configMap:
+            name: postgresql-scripts
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: scw-bssd-retain
+        accessModes:
+          - ReadWriteOnce
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: 5Gi
+        

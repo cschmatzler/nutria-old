@@ -1,0 +1,227 @@
+apiVersion: vault.banzaicloud.com/v1alpha1
+kind: Vault
+metadata:
+  name: vault
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/part-of: vault
+    app.kubernetes.io/component: vault
+    app.kubernetes.io/version: 1.10.3
+    vault_cr: vault
+spec:
+  serviceAccount: vault
+  size: 3
+  image: vault:1.10.3
+
+  serviceType: ClusterIP
+  serviceRegistrationEnabled: true
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: scw-bssd-retain
+        accessModes:
+          - ReadWriteOnce
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: 1Gi
+  volumeMounts:
+    - name: data
+      mountPath: /vault/file
+
+  caNamespaces:
+    - "*"
+
+  unsealConfig:
+    options:
+      storeRootToken: true
+    kubernetes:
+      secretNamespace: infrastructure
+
+  config:
+    storage:
+      raft:
+        path: /vault/file
+    listener:
+      tcp:
+        address: 0.0.0.0:8200
+        tls_disable: true
+    api_addr: http://vault.infrastructure.svc.cluster.local:8200
+    cluster_addr: https://${.Env.POD_NAME}:8201
+    ui: true
+
+  externalConfig:
+    auth:
+      - type: kubernetes
+        roles:
+          - name: default
+            bound_service_account_names:
+              - default
+              - vault-secrets-webhook
+            bound_service_account_namespaces:
+              - "*"
+            policies: allow_secrets
+            ttl: 1h
+          # infrastructure
+          # --------------
+          - name: diun
+            bound_service_account_names:
+              - diun
+            bound_service_account_namespaces:
+              - infrastructure
+            policies:
+              - dockerio 
+              - matrix
+            ttl: 1h
+          - name: external-dns
+            bound_service_account_names:
+              - external-dns
+            bound_service_account_namespaces:
+              - infrastructure
+            policies: cloudflare
+            ttl: 1h
+          - name: postgresql
+            bound_service_account_names:
+              - postgresql
+              - postgresql-pgpool
+            bound_service_account_namespaces:
+              - infrastructure
+            policies: postgresql
+            ttl: 1h
+          # leuchtturm-io
+          # -------------
+          - name: vaultwarden
+            bound_service_account_names:
+              - vaultwarden
+            bound_service_account_namespaces:
+              - leuchtturm-io
+            policies:
+              - vaultwarden
+              - mail
+            ttl: 1h
+          # medium-place
+          # ------------
+          - name: gitea
+            bound_service_account_names:
+              - gitea
+            bound_service_account_namespaces:
+              - medium-place
+            policies: 
+              - gitea
+              - mail
+            ttl: 1h
+          - name: mastodon
+            bound_service_account_names:
+              - mastodon
+              - mastodon-redis
+            bound_service_account_namespaces:
+              - medium-place
+            policies:
+              - mastodon
+              - mail
+              - s3
+            ttl: 1h
+          - name: synapse
+            bound_service_account_names:
+              - synapse
+            bound_service_account_namespaces:
+              - medium-place
+            policies:
+              - synapse
+              - mail
+              - s3
+            ttl: 1h
+          - name: teslamate
+            bound_service_account_names:
+              - teslamate
+              - teslamate-grafana
+            bound_service_account_namespaces:
+              - medium-place
+            policies: teslamate
+            ttl: 1h
+      - type: github
+        options:
+          listing_visibility: unauth
+        config:
+          organization: leuchtturm-io
+        map:
+          users:
+            cschmatzler: allow_all
+
+    policies:
+      - name: allow_all
+        rules: path "*" {
+          capabilities = ["create", "read", "update", "delete", "list"]
+          }
+      - name: cloudflare
+        rules: path "secret/data/external/cloudflare" {
+          capabilities = ["read", "list"]
+          }
+      - name: dockerio
+        rules: path "secret/data/external/dockerio" {
+          capabilities = ["read", "list"]
+          }
+      - name: mail
+        rules: path "secret/data/external/mail" {
+          capabilities = ["read", "list"]
+          }
+      - name: matrix
+        rules: path "secret/data/external/matrix" {
+          capabilities = ["read", "list"]
+          }
+      - name: s3
+        rules: path "secret/data/external/s3" {
+          capabilities = ["read", "list"]
+          }
+      # infrastructure
+      # --------------
+      - name: postgresql
+        rules: path "secret/data/infrastructure/postgresql/*" {
+          capabilities = ["read", "list"]
+          }
+          path "secret/data/+/+/postgresql" {
+          capabilities = ["read", "list"]
+          }
+      # leuchtturm-io
+      # -------------
+      - name: vaultwarden
+        rules: path "secret/data/leuchtturm-io/vaultwarden/*" {
+          capabilities = ["read", "list"]
+          }
+      # medium-place
+      # ------------
+      - name: gitea
+        rules: path "secret/data/medium-place/gitea/*" {
+          capabilities = ["read", "list"]
+          }
+      - name: mastodon
+        rules: path "secret/data/medium-place/mastodon/*" {
+          capabilities = ["read", "list"]
+          }
+      - name: synapse
+        rules: path "secret/data/medium-place/synapse/*" {
+          capabilities = ["read", "list"]
+          }
+      - name: teslamate
+        rules: path "secret/data/medium-place/teslamate/*" {
+          capabilities = ["read", "list"]
+          }
+
+    secrets:
+      - path: secret
+        type: kv
+        description: General secrets.
+        options:
+          version: 2
+
+  resources:
+    vault:
+      requests:
+        cpu: 75m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 512Mi

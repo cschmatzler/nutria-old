@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: synapse
+  namespace: medium-place
+  labels:
+    app.kubernetes.io/name: synapse
+    app.kubernetes.io/part-of: synapse
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: 1.59.1
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: synapse
+      app.kubernetes.io/part-of: synapse
+  template:
+    metadata:
+      annotations:
+        vault.security.banzaicloud.io/vault-addr: http://vault.infrastructure.svc.cluster.local:8200
+        vault.security.banzaicloud.io/vault-role: synapse
+        vault.security.banzaicloud.io/vault-agent-configmap: synapse-config
+      labels:
+        app.kubernetes.io/name: synapse
+        app.kubernetes.io/part-of: synapse
+        app.kubernetes.io/component: server
+        app.kubernetes.io/version: 1.59.1
+    spec:
+      serviceAccountName: synapse
+      containers:
+        - name: synapse
+          image: cschmatzler/synapse:v1.59.1
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: synapse-env
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 8008
+          resources:
+            requests:
+              cpu: 16m
+              memory: 384Mi
+            limits:
+              cpu: 128m
+              memory: 512Mi

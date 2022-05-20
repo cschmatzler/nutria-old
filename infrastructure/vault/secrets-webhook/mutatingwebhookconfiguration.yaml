@@ -1,0 +1,141 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: vault-secrets-webhook
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: vault-secrets-webhook
+    app.kubernetes.io/part-of: vault
+    app.kubernetes.io/component: secrets-webhook
+    app.kubernetes.io/version: 1.15.2
+webhooks:
+  - name: pods.vault-secrets-webhook.admission.banzaicloud.com
+    admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        namespace: infrastructure
+        name: vault-secrets-webhook
+        path: /pods
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURGVENDQWYyZ0F3SUJBZ0lRVmlCQ0d2Nnk5cmtvYnB3NEhzZVN2akFOQmdrcWhraUc5dzBCQVFzRkFEQVYKTVJNd0VRWURWUVFERXdwemRtTXRZMkYwTFdOaE1CNFhEVEl5TURVeE9ERTNNVGMxTlZvWERUTXlNRFV4TlRFMwpNVGMxTlZvd0ZURVRNQkVHQTFVRUF4TUtjM1pqTFdOaGRDMWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFECmdnRVBBRENDQVFvQ2dnRUJBTVkveENqOVZaRmZRcnkrSHZZVDVHT0RYU0NwcEQxL2FSSDV0d1JFanFZM2ZnRGkKQWxpdDc4eDhrc21RdFVWSzVQL2d0Y3gybytQKzNwVnQzZnREUUUyb1E3UHZkVWFXUEhxa1lLcHAvNHJqY1RVaAo1d0J6T3czS010R2wwYTJWcGFERGRsbW5mL3dtMU5EUEdhdkZ4VitCNm10TktCaDZLM1kzU3NmWjJsNnVDdUlkCjkyRjZmbUFtZjhSU1locldmOGphY3dqeFBsdXNHd25ueUk4UmFHSkVDOXFHaHp0VURCU1JFdkwrSlJqK1VBNEoKQmRwU01jckpMMGNJV0RQdldoN1p3ZmUvenMyT2xlNThieWs1WWxYNFRiMHJnQndWYzJRWnlHVHhpejJNTjlXSwprTytwQXZSdjB0RUxJeUNJb2dIZjlPYy9jK2lJNCs4UHNHWXVGc2NDQXdFQUFhTmhNRjh3RGdZRFZSMFBBUUgvCkJBUURBZ0trTUIwR0ExVWRKUVFXTUJRR0NDc0dBUVVGQndNQkJnZ3JCZ0VGQlFjREFqQVBCZ05WSFJNQkFmOEUKQlRBREFRSC9NQjBHQTFVZERnUVdCQlNEeUxxcmpBenJTODQ5SkZiQTZpTnFWYTFvSkRBTkJna3Foa2lHOXcwQgpBUXNGQUFPQ0FRRUFTOEdMdzA3bU9PSDBzTjlwb2NXRFpwN1MzdGE3dXJGVVduZ3ExSitHZWV4L3FRNTU3V0wxCkdZQWR1R3ArSE9NOE96a2M0b1ZESTlHTFhzR2o0Z2JEb0hFUEQ0ekxxL3MxRGkrT3pwSktoVDVPQThVRnlLS3oKNGRvTHB3bk1EZ2lISUFxTm1RaWU4V3ZZVUVRTE5ReXlETi9kaHdoZUhZNDRVOVgxc21tVm0rZitPczc5NEdocAp1YkpYYldjRmJPSVNnRUk0ZjRkcFk4dy9HMW1DclR5TU1heWx0Rzk4NGFCQ0dsYVZiUVFZZmppenZoaDFoSy90ClBEL0ljaUpybWNTazNjeU51cXUzalA2SlUyTWZMUUdwTlVMRDdNdHdqbnQwZDV6eEgrSzRMblRKVC9ycVVobFcKNVlHSG80MXNvZmxFL1hTTTZ0anJXakRRcGNHVzEzMFNKZz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    rules:
+      - operations:
+          - CREATE
+        apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        resources:
+          - pods
+    failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: name
+          operator: NotIn
+          values:
+            - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+        - key: name
+          operator: NotIn
+          values:
+            - infrastructure
+    objectSelector:
+      matchExpressions:
+        - key: security.banzaicloud.io/mutate
+          operator: NotIn
+          values:
+            - skip
+    sideEffects: NoneOnDryRun
+  - name: secrets.vault-secrets-webhook.admission.banzaicloud.com
+    admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        namespace: infrastructure
+        name: vault-secrets-webhook
+        path: /secrets
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURGVENDQWYyZ0F3SUJBZ0lRVmlCQ0d2Nnk5cmtvYnB3NEhzZVN2akFOQmdrcWhraUc5dzBCQVFzRkFEQVYKTVJNd0VRWURWUVFERXdwemRtTXRZMkYwTFdOaE1CNFhEVEl5TURVeE9ERTNNVGMxTlZvWERUTXlNRFV4TlRFMwpNVGMxTlZvd0ZURVRNQkVHQTFVRUF4TUtjM1pqTFdOaGRDMWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFECmdnRVBBRENDQVFvQ2dnRUJBTVkveENqOVZaRmZRcnkrSHZZVDVHT0RYU0NwcEQxL2FSSDV0d1JFanFZM2ZnRGkKQWxpdDc4eDhrc21RdFVWSzVQL2d0Y3gybytQKzNwVnQzZnREUUUyb1E3UHZkVWFXUEhxa1lLcHAvNHJqY1RVaAo1d0J6T3czS010R2wwYTJWcGFERGRsbW5mL3dtMU5EUEdhdkZ4VitCNm10TktCaDZLM1kzU3NmWjJsNnVDdUlkCjkyRjZmbUFtZjhSU1locldmOGphY3dqeFBsdXNHd25ueUk4UmFHSkVDOXFHaHp0VURCU1JFdkwrSlJqK1VBNEoKQmRwU01jckpMMGNJV0RQdldoN1p3ZmUvenMyT2xlNThieWs1WWxYNFRiMHJnQndWYzJRWnlHVHhpejJNTjlXSwprTytwQXZSdjB0RUxJeUNJb2dIZjlPYy9jK2lJNCs4UHNHWXVGc2NDQXdFQUFhTmhNRjh3RGdZRFZSMFBBUUgvCkJBUURBZ0trTUIwR0ExVWRKUVFXTUJRR0NDc0dBUVVGQndNQkJnZ3JCZ0VGQlFjREFqQVBCZ05WSFJNQkFmOEUKQlRBREFRSC9NQjBHQTFVZERnUVdCQlNEeUxxcmpBenJTODQ5SkZiQTZpTnFWYTFvSkRBTkJna3Foa2lHOXcwQgpBUXNGQUFPQ0FRRUFTOEdMdzA3bU9PSDBzTjlwb2NXRFpwN1MzdGE3dXJGVVduZ3ExSitHZWV4L3FRNTU3V0wxCkdZQWR1R3ArSE9NOE96a2M0b1ZESTlHTFhzR2o0Z2JEb0hFUEQ0ekxxL3MxRGkrT3pwSktoVDVPQThVRnlLS3oKNGRvTHB3bk1EZ2lISUFxTm1RaWU4V3ZZVUVRTE5ReXlETi9kaHdoZUhZNDRVOVgxc21tVm0rZitPczc5NEdocAp1YkpYYldjRmJPSVNnRUk0ZjRkcFk4dy9HMW1DclR5TU1heWx0Rzk4NGFCQ0dsYVZiUVFZZmppenZoaDFoSy90ClBEL0ljaUpybWNTazNjeU51cXUzalA2SlUyTWZMUUdwTlVMRDdNdHdqbnQwZDV6eEgrSzRMblRKVC9ycVVobFcKNVlHSG80MXNvZmxFL1hTTTZ0anJXakRRcGNHVzEzMFNKZz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    rules:
+      - operations:
+          - CREATE
+          - UPDATE
+        apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        resources:
+          - secrets
+    failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: name
+          operator: NotIn
+          values:
+            - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+        - key: name
+          operator: NotIn
+          values:
+            - infrastructure
+    objectSelector:
+      matchExpressions:
+        - key: owner
+          operator: NotIn
+          values:
+            - helm
+        - key: security.banzaicloud.io/mutate
+          operator: NotIn
+          values:
+            - skip
+    sideEffects: NoneOnDryRun
+  - name: configmaps.vault-secrets-webhook.admission.banzaicloud.com
+    admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        namespace: infrastructure
+        name: vault-secrets-webhook
+        path: /configmaps
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURGVENDQWYyZ0F3SUJBZ0lRVmlCQ0d2Nnk5cmtvYnB3NEhzZVN2akFOQmdrcWhraUc5dzBCQVFzRkFEQVYKTVJNd0VRWURWUVFERXdwemRtTXRZMkYwTFdOaE1CNFhEVEl5TURVeE9ERTNNVGMxTlZvWERUTXlNRFV4TlRFMwpNVGMxTlZvd0ZURVRNQkVHQTFVRUF4TUtjM1pqTFdOaGRDMWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFECmdnRVBBRENDQVFvQ2dnRUJBTVkveENqOVZaRmZRcnkrSHZZVDVHT0RYU0NwcEQxL2FSSDV0d1JFanFZM2ZnRGkKQWxpdDc4eDhrc21RdFVWSzVQL2d0Y3gybytQKzNwVnQzZnREUUUyb1E3UHZkVWFXUEhxa1lLcHAvNHJqY1RVaAo1d0J6T3czS010R2wwYTJWcGFERGRsbW5mL3dtMU5EUEdhdkZ4VitCNm10TktCaDZLM1kzU3NmWjJsNnVDdUlkCjkyRjZmbUFtZjhSU1locldmOGphY3dqeFBsdXNHd25ueUk4UmFHSkVDOXFHaHp0VURCU1JFdkwrSlJqK1VBNEoKQmRwU01jckpMMGNJV0RQdldoN1p3ZmUvenMyT2xlNThieWs1WWxYNFRiMHJnQndWYzJRWnlHVHhpejJNTjlXSwprTytwQXZSdjB0RUxJeUNJb2dIZjlPYy9jK2lJNCs4UHNHWXVGc2NDQXdFQUFhTmhNRjh3RGdZRFZSMFBBUUgvCkJBUURBZ0trTUIwR0ExVWRKUVFXTUJRR0NDc0dBUVVGQndNQkJnZ3JCZ0VGQlFjREFqQVBCZ05WSFJNQkFmOEUKQlRBREFRSC9NQjBHQTFVZERnUVdCQlNEeUxxcmpBenJTODQ5SkZiQTZpTnFWYTFvSkRBTkJna3Foa2lHOXcwQgpBUXNGQUFPQ0FRRUFTOEdMdzA3bU9PSDBzTjlwb2NXRFpwN1MzdGE3dXJGVVduZ3ExSitHZWV4L3FRNTU3V0wxCkdZQWR1R3ArSE9NOE96a2M0b1ZESTlHTFhzR2o0Z2JEb0hFUEQ0ekxxL3MxRGkrT3pwSktoVDVPQThVRnlLS3oKNGRvTHB3bk1EZ2lISUFxTm1RaWU4V3ZZVUVRTE5ReXlETi9kaHdoZUhZNDRVOVgxc21tVm0rZitPczc5NEdocAp1YkpYYldjRmJPSVNnRUk0ZjRkcFk4dy9HMW1DclR5TU1heWx0Rzk4NGFCQ0dsYVZiUVFZZmppenZoaDFoSy90ClBEL0ljaUpybWNTazNjeU51cXUzalA2SlUyTWZMUUdwTlVMRDdNdHdqbnQwZDV6eEgrSzRMblRKVC9ycVVobFcKNVlHSG80MXNvZmxFL1hTTTZ0anJXakRRcGNHVzEzMFNKZz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    rules:
+      - operations:
+          - CREATE
+          - UPDATE
+        apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        resources:
+          - configmaps
+    failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: name
+          operator: NotIn
+          values:
+            - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+        - key: name
+          operator: NotIn
+          values:
+            - infrastructure
+    objectSelector:
+      matchExpressions:
+        - key: owner
+          operator: NotIn
+          values:
+            - helm
+        - key: security.banzaicloud.io/mutate
+          operator: NotIn
+          values:
+            - skip
+    sideEffects: NoneOnDryRun

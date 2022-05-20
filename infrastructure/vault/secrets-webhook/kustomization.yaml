@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - secret.yaml
+  - clusterrole.yaml
+  - clusterrolebinding.yaml
+  - poddisruptionbudget.yaml
+  - mutatingwebhookconfiguration.yaml
+  - deployment.yaml
+  - service.yaml
+generatorOptions:
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/part-of: vault
+    app.kubernetes.io/component: secrets-webhook
+    app.kubernetes.io/version: 1.15.2
+configMapGenerator:
+  - name: vault-secrets-webhook-env
+    namespace: infrastructure
+    env: configuration/secrets-webhook.env

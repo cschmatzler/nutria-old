@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: external-dns
+    app.kubernetes.io/part-of: external-dns
+    app.kubernetes.io/component: external-dns
+    app.kubernetes.io/version: 0.11.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: external-dns
+      app.kubernetes.io/part-of: external-dns
+  template:
+    metadata:
+      annotations:
+        vault.security.banzaicloud.io/vault-addr: http://vault.infrastructure.svc.cluster.local:8200
+        vault.security.banzaicloud.io/vault-role: external-dns
+        diun.enable: "true"
+        diun.regopt: docker.io
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+-debian-\\d+-r\\d+$"
+      labels:
+        app.kubernetes.io/name: external-dns
+        app.kubernetes.io/part-of: external-dns
+        app.kubernetes.io/component: external-dns
+        app.kubernetes.io/version: 0.11.1
+    spec:
+      serviceAccountName: external-dns
+      containers:
+        - name: external-dns
+          image: bitnami/external-dns:0.11.1
+          args:
+            - --metrics-address=:7979
+            - --log-level=info
+            - --log-format=text
+            - --policy=upsert-only
+            - --provider=cloudflare
+            - --registry=txt
+            - --interval=1m
+            - --source=service
+            - --source=ingress
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: external-dns-env
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 7979
+          resources:
+            requests:
+              cpu: 4m
+              memory: 64Mi
+            limits:
+              cpu: 8m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http

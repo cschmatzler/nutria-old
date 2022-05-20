@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - statefulset.yaml
+  - service.yaml
+  - ingress.yaml
+generatorOptions:
+  labels:
+    app.kubernetes.io/name: vaultwarden
+    app.kubernetes.io/part-of: vaultwarden
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: 1.24.0
+configMapGenerator:
+  - name: vaultwarden-env
+    namespace: leuchtturm-io
+    env: configuration/vaultwarden.env

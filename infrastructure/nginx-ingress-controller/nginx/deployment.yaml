@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-ingress-controller-nginx
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/part-of: nginx-ingress-controller
+    app.kubernetes.io/component: server
+    version: 1.21.6
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nginx
+      app.kubernetes.io/part-of: nginx-ingress-controller
+  replicas: 2
+  template:
+    metadata:
+      annotations:
+        diun.enable: "true"
+        diun.regopt: docker.io
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+-debian-\\d+-r\\d+$"
+      labels:
+        app.kubernetes.io/name: nginx
+        app.kubernetes.io/part-of: nginx-ingress-controller
+        app.kubernetes.io/component: server
+        version: 1.21.6
+    spec:
+      serviceAccountName: nginx-ingress-controller-nginx
+      terminationGracePeriodSeconds: 60
+      securityContext: 
+        fsGroup: 1001
+      containers:
+        - name: nginx
+          image: bitnami/nginx:1.21.6
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 8080
+          volumeMounts:
+            - name: nginx-ingress-controller-nginx-config
+              mountPath: /opt/bitnami/nginx/conf/bitnami/
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /healthz
+              port: http
+          resources:
+            limits: {}
+            requests: {}
+      volumes:
+        - name: nginx-ingress-controller-nginx-config
+          configMap:
+            name: nginx-ingress-controller-nginx-config
+            items:
+              - key: nginx.conf
+                path: nginx.conf

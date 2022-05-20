@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - statefulset.yaml
+  - service.yaml
+generatorOptions:
+  labels:
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/part-of: mastodon
+    app.kubernetes.io/component: search
+    app.kubernetes.io/version: 8.2.0
+configMapGenerator:
+  - name: mastodon-elasticsearch-env
+    namespace: medium-place
+    env: configuration/mastodon-elasticsearch.env

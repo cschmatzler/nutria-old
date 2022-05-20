@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: synapse
+  namespace: medium-place
+  labels:
+    app.kubernetes.io/name: synapse
+    app.kubernetes.io/part-of: synapse
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: 1.59.1
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 25m
+    cert-manager.io/cluster-issuer: letsencrypt
+    acme.cert-manager.io/http01-edit-in-place: true
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - synapse.medium.place
+      secretName: synapse.medium.place-tls
+  rules:
+    - host: synapse.medium.place
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: synapse
+                port:
+                  name: http

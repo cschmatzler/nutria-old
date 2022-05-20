@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+generatorOptions:
+  labels:
+    app.kubernetes.io/name: mastodon
+    app.kubernetes.io/part-of: mastodon
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: 3.5.2
+configMapGenerator:
+  - name: mastodon-env
+    namespace: medium-place
+    env: configuration/mastodon.env

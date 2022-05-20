@@ -1,0 +1,87 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - gotk-components.yaml
+  - gotk-sync.yaml
+
+patchesStrategicMerge:
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        app.kubernetes.io/instance: flux-system
+      name: helm-controller
+      namespace: flux-system
+    spec:
+      template:
+        spec:
+          containers:
+            - name: manager
+              resources:
+                requests:
+                  cpu: 8m
+                  memory: 128Mi
+                limits:
+                  cpu: 32m
+                  memory: 192Mi
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        app.kubernetes.io/instance: flux-system
+      name: kustomize-controller
+      namespace: flux-system
+    spec:
+      template:
+        spec:
+          containers:
+            - name: manager
+              resources:
+                requests:
+                  cpu: 256m
+                  memory: 128Mi
+                limits:
+                  cpu: 384m
+                  memory: 256Mi
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        app.kubernetes.io/instance: flux-system
+      name: notification-controller
+      namespace: flux-system
+    spec:
+      template:
+        spec:
+          containers:
+            - name: manager
+              resources:
+                requests:
+                  cpu: 8m
+                  memory: 32Mi
+                limits:
+                  cpu: 32m
+                  memory: 64Mi
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+        app.kubernetes.io/instance: flux-system
+      name: source-controller
+      namespace: flux-system
+    spec:
+      template:
+        spec:
+          containers:
+            - name: manager
+              resources:
+                requests:
+                  cpu: 8m
+                  memory: 512Mi
+                limits:
+                  cpu: 192m
+                  memory: 1Gi

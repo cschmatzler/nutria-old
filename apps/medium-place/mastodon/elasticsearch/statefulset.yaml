@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mastodon-elasticsearch
+  namespace: medium-place
+  labels:
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/part-of: mastodon
+    app.kubernetes.io/component: search
+    app.kubernetes.io/version: 8.2.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: elasticsearch
+      app.kubernetes.io/part-of: mastodon
+  template:
+    metadata:
+      annotations:
+        diun.enable: "true"
+        diun.regopt: docker.io
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+-debian-\\d+-r\\d+$"
+      labels:
+        app.kubernetes.io/name: elasticsearch
+        app.kubernetes.io/part-of: mastodon
+        app.kubernetes.io/component: search
+        app.kubernetes.io/version: 8.2.0
+    spec:
+      securityContext:
+        fsGroup: 1001
+      containers:
+        - name: elasticsearch
+          image: bitnami/elasticsearch:8.2.0-debian-10-r12
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: mastodon-elasticsearch-env
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 9200
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/elasticsearch/data
+          resources:
+            requests:
+              cpu: 32m
+              memory: 384Mi
+            limits:
+              cpu: 256m
+              memory: 512Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        namespace: medium-place
+        labels:
+          app.kubernetes.io/name: elasticsearch
+          app.kubernetes.io/part-of: mastodon
+          app.kubernetes.io/component: search
+      spec:
+        storageClassName: scw-bssd-retain
+        accessModes:
+          - ReadWriteOnce
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: 1Gi
+        

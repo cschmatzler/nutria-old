@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-secrets-webhook
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: vault-secrets-webhook
+    app.kubernetes.io/part-of: vault
+    app.kubernetes.io/component: secrets-webhook
+    app.kubernetes.io/version: 1.15.2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vault-secrets-webhook
+      app.kubernetes.io/part-of: vault
+  template:
+    metadata:
+      annotations:
+        diun.enable: "true"
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+$"
+      labels:
+        app.kubernetes.io/name: vault-secrets-webhook
+        app.kubernetes.io/part-of: vault
+        app.kubernetes.io/component: secrets-webhook
+        app.kubernetes.io/version: 1.15.2
+        security.banzaicloud.io/mutate: skip
+    spec:
+      serviceAccountName: vault-secrets-webhook
+      securityContext:
+        fsGroup: 1001
+      containers:
+        - name: secrets-webhook
+          image: ghcr.io/banzaicloud/vault-secrets-webhook:1.15.2
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: vault-secrets-webhook-env
+          ports:
+            - name: https
+              protocol: TCP
+              containerPort: 8443
+          volumeMounts:
+            - name: vault-secrets-webhook-webhook-tls
+              mountPath: /var/serving-cert
+          readinessProbe:
+            httpGet:
+              port: https
+              scheme: HTTPS
+              path: /healthz
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+      volumes:
+        - name: vault-secrets-webhook-webhook-tls
+          secret:
+            secretName: vault-secrets-webhook-webhook-tls
+            defaultMode: 420

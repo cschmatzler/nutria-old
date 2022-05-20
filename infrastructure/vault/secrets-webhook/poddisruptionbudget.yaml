@@ -1,0 +1,16 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: vault-secrets-webhook
+  namespace: infrastructure
+  labels:
+    app.kubernetes.io/name: vault-secrets-webhook
+    app.kubernetes.io/part-of: vault
+    app.kubernetes.io/component: secrets-webhook
+    app.kubernetes.io/version: 1.15.2
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vault-secrets-webhook
+      app.kubernetes.io/part-of: vault

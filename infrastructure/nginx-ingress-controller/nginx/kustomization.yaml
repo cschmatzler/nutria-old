@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - deployment.yaml
+  - service.yaml
+generatorOptions:
+  labels:
+    app.kubernetes.io/name: nginx-ingress-controller
+    app.kubernetes.io/part-of: nginx-ingress-controller
+    app.kubernetes.io/component: nginx
+    version: 1.21.6
+configMapGenerator:
+  - name: nginx-ingress-controller-nginx-config
+    namespace: infrastructure
+    files:
+      - configuration/nginx.conf

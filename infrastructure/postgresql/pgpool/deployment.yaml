@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql-pgpool
+  namespace: infrastructure
+  labels: 
+    app.kubernetes.io/name: pgpool
+    app.kubernetes.io/part-of: postgresql
+    app.kubernetes.io/component: pooler
+    app.kubernetes.io/version: 4.3.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app.kubernetes.io/name: pgpool
+      app.kubernetes.io/part-of: postgresql
+  template:
+    metadata:
+      annotations:
+        vault.security.banzaicloud.io/vault-addr: http://vault.infrastructure.svc.cluster.local:8200
+        vault.security.banzaicloud.io/vault-role: postgresql
+        diun.enable: "true"
+        diun.regopt: docker.io
+        diun.watch_repo: "true"
+        diun.include_tags: "^\\d+\\.\\d+\\.\\d+-debian-\\d+-r\\d+$"
+      labels: 
+        app.kubernetes.io/name: pgpool
+        app.kubernetes.io/part-of: postgresql
+        app.kubernetes.io/component: pooler
+        app.kubernetes.io/version: 4.3.1
+    spec:
+      serviceAccountName: postgresql-pgpool
+      securityContext:
+        fsGroup: 1001
+      containers:
+        - name: pgpool
+          image: bitnami/pgpool:4.3.1-debian-10-r80
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          envFrom:
+            - configMapRef:
+                name: postgresql-pgpool-env
+          ports:
+            - name: postgresql
+              protocol: TCP
+              containerPort: 5432
+          livenessProbe:
+            failureThreshold: 5
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /opt/bitnami/scripts/pgpool/healthcheck.sh
+          readinessProbe:
+            failureThreshold: 5
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - bash
+                - -ec
+                - PGPASSWORD=${PGPOOL_POSTGRES_PASSWORD} psql -U "postgres" -d "postgres" -h /opt/bitnami/pgpool/tmp -tA -c "SELECT 1" >/dev/null

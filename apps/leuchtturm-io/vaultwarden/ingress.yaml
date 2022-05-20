@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vaultwarden
+  namespace: leuchtturm-io
+  labels:
+    app.kubernetes.io/name: vaultwarden
+    app.kubernetes.io/part-of: vaultwarden
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: 1.24.0
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rpm: 50
+    cert-manager.io/cluster-issuer: letsencrypt
+    acme.cert-manager.io/http01-edit-in-place: true
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - vault.leuchtturm.io
+      secretName: vault.leuchtturm.io-tls
+  rules:
+    - host: vault.leuchtturm.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: vaultwarden
+                port:
+                  name: http
