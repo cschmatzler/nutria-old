@@ -67,6 +67,8 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /bitnami/postgresql
+            - name: config
+              mountPath: /bitnami/postgresql/conf/conf.d
             - name: scripts
               mountPath: /pre-stop.sh
               subPath: pre-stop.sh
@@ -86,6 +88,9 @@ spec:
             limits: {}
             requests: {}
       volumes:
+        - name: config
+          configMap:
+            name: postgresql-config
         - name: scripts
           configMap:
             name: postgresql-scripts
