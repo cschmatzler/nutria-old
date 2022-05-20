@@ -7,8 +7,8 @@ resources:
 generatorOptions:
   labels:
     app.kubernetes.io/name: redis
-    app.kubernetes.io/part-of: kv-store
-    app.kubernetes.io/component: server
+    app.kubernetes.io/part-of: mastodon
+    app.kubernetes.io/component: kv-store
     app.kubernetes.io/version: 6.2.7
 configMapGenerator:
   - name: mastodon-redis-env
