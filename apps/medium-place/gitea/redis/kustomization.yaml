@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - statefulset.yaml
+  - service.yaml
+generatorOptions:
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: gitea
+    app.kubernetes.io/component: kv-store
+    app.kubernetes.io/version: 6.2.7
+configMapGenerator:
+  - name: gitea-redis-env
+    namespace: medium-place
+    env: configuration/gitea-redis.env

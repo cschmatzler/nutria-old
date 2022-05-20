@@ -107,6 +107,7 @@ spec:
           - name: gitea
             bound_service_account_names:
               - gitea
+              - gitea-redis
             bound_service_account_namespaces:
               - medium-place
             policies: 
