@@ -85,8 +85,12 @@ spec:
               - -ec
               - pg_isready -h localhost -U postgres
           resources:
-            limits: {}
-            requests: {}
+            requests: 
+              cpu: 64m
+              memory: 512Mi
+            limits: 
+              cpu: 128m
+              memory: 1Gi
       volumes:
         - name: config
           configMap:
