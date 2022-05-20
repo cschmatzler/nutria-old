@@ -58,10 +58,10 @@ spec:
               subPath: etc/gitea
           resources:
             requests:
-              cpu: 4m
+              cpu: 16m
               memory: 256Mi
             limits:
-              cpu: 32m
+              cpu: 64m
               memory: 384Mi
   volumeClaimTemplates:
     - metadata:
